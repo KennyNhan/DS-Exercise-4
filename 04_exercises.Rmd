@@ -178,10 +178,40 @@ starbucks_with_2018_pop_est <-
 ```
 
   6. **`dplyr` review**: Look through the code above and describe what each line of code does.
-reads a csv file and stores it into a newly created file of census_pop_est_2018. It then pipes that file and separates state into multiple columns of dot and state while the extra merge only splits at most length(into) times. They then select dot and drop the variable. They then mutate state by lowering all of the state strings. starbucks_with_2018_pop_est is then created by joining "state_name" from starbucks_us_by_state to "state" from census_pop_est_2018 and then creating a new variable of starbucks_per_10000 by getting the total count and dividing it by est_pop_2018 and then multiplying it by 10000. 
+Reads a csv file and stores it into a newly created file of census_pop_est_2018. It then pipes that file and separates state into multiple columns of dot and state while the extra merge only splits at most length(into) times. They then select dot and drop the variable. They then mutate state by lowering all of the state strings. starbucks_with_2018_pop_est is then created by joining "state_name" from starbucks_us_by_state to "state" from census_pop_est_2018 and then creating a new variable of starbucks_per_10000 by getting the total count and dividing it by est_pop_2018 and then multiplying it by 10000. 
 
   7. Create a choropleth map that shows the number of Starbucks per 10,000 people on a map of the US. Use a new fill color, add points for all Starbucks in the US (except Hawaii and Alaska), add an informative title for the plot, and include a caption that says who created the plot (you!). Make a conclusion about what you observe.
 
+```{r}
+starbucks_us_by_state <- Starbucks %>% 
+  filter(Country == "US") %>% 
+  count(`State.Province`) %>% 
+  mutate(state_name = str_to_lower(abbr2state(`State.Province`))) 
+
+states_map <- map_data("state")
+
+names(Starbucks)<-str_replace_all(names(Starbucks), c("/" = "." , "," = "" ))
+
+us_starbucks <- Starbucks %>%
+  filter(Country == "US") %>% 
+  filter(State.Province != "AK") %>% 
+  filter(State.Province != "HI")
+
+starbucks_with_2018_pop_est %>% 
+  ggplot() +
+  geom_map(map = states_map,
+           aes(map_id = state_name,
+               fill = starbucks_per_10000), color = "white") +
+  scale_fill_viridis_c(option = "C")+
+  geom_point(data = us_starbucks,
+             aes(x = Longitude, y = Latitude ),
+             alpha = 1, 
+             size = 1)+
+  expand_limits(x = states_map$long, y = states_map$lat) + 
+  theme_map()
+
+```
+  
 ### A few of your favorite things (`leaflet`)
 
   8. In this exercise, you are going to create a single map of some of your favorite places! The end result will be one map that satisfies the criteria below. 
@@ -193,6 +223,21 @@ reads a csv file and stores it into a newly created file of census_pop_est_2018.
   * Connect all your locations together with a line in a meaningful way (you may need to order them differently in the original data).  
   
   * If there are other variables you want to add that could enhance your plot, do that now.  
+  
+```{r}
+  kenny_fav_places <- tibble(
+  place = c("New House", "Bella's House", "Cheesecake Factory", 
+            "Target", "Seth's House", "China Grill",
+            "Ginsburg's House", "Isaac House", "Martina's House", "Old House"),
+  long = c(-111.832150, -111.864950, -111.889702, 
+           -111.893150, -111.783290, -111.834276, 
+           -111.7915959, -111.8003867, -111.8138645, -111.9193),
+  lat = c(40.685870, 40.509170, 40.765099,
+          40.567210, 40.680170, 40.624229, 
+          40.6935423, 40.6809961, 40.7095681, 40.6596))
+
+  leaflet(data = kenny_fav_places) %>%
+```
   
 ## Revisiting old datasets
 
