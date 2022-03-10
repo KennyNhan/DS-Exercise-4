@@ -183,14 +183,14 @@ Reads a csv file and stores it into a newly created file of census_pop_est_2018.
   7. Create a choropleth map that shows the number of Starbucks per 10,000 people on a map of the US. Use a new fill color, add points for all Starbucks in the US (except Hawaii and Alaska), add an informative title for the plot, and include a caption that says who created the plot (you!). Make a conclusion about what you observe.
 
 ```{r}
+names(Starbucks)<-str_replace_all(names(Starbucks), c("/" = "." , "," = "" ))
+
 starbucks_us_by_state <- Starbucks %>% 
   filter(Country == "US") %>% 
   count(`State.Province`) %>% 
   mutate(state_name = str_to_lower(abbr2state(`State.Province`))) 
 
 states_map <- map_data("state")
-
-names(Starbucks)<-str_replace_all(names(Starbucks), c("/" = "." , "," = "" ))
 
 us_starbucks <- Starbucks %>%
   filter(Country == "US") %>% 
@@ -237,6 +237,16 @@ starbucks_with_2018_pop_est %>%
           40.6935423, 40.6809961, 40.7095681, 40.6596))
 
   leaflet(data = kenny_fav_places) %>%
+     addTiles() %>% 
+  addCircles(lng = ~long, 
+             lat = ~lat, 
+             label = ~place,
+             weight = 10, 
+             opacity = 1, 
+             color = col2hex("darkred")) %>% 
+    addPolylines(lng = ~long, 
+               lat = ~lat, 
+               color = col2hex("darkred"))
 ```
   
 ## Revisiting old datasets
@@ -264,13 +274,37 @@ Stations<-read_csv("http://www.macalester.edu/~dshuman1/data/112/DC-Stations.csv
   9. Use the latitude and longitude variables in `Stations` to make a visualization of the total number of departures from each station in the `Trips` data. Use either color or size to show the variation in number of departures. This time, plot the points on top of a map. Use any of the mapping tools you'd like.
   
 ```{r}
+Trip_combo <-Trips %>%
+  left_join(Stations, c("sstation" = "name"))
+
+  # leaflet() %>%
+  # addTiles() %>%
+  # addCircles(lng = ~long,
+  #            lat = ~lat,
+  #            weight = 10,
+  #            opacity = 1,
+  #            color = col2hex("darkred")) 
+
+
+states_map <- map_data("state")
+
 
 ```
   
   10. Only 14.4% of the trips in our data are carried out by casual users. Create a plot that shows which area(s) have stations with a much higher percentage of departures by casual users. What patterns do you notice? Also plot this on top of a map. I think it will be more clear what the patterns are.
   
 ```{r}
-
+Trips %>% 
+  left_join(Stations, c("sstation" = "name")) %>% 
+  group_by(sstation, lat, long, client) %>% 
+  summarize(Departures = n()) %>%
+  mutate(prop = Departures/sum(Departures)) %>% 
+  filter(client == "Casual") %>% 
+  ggplot(aes(y = lat, x = long, size = prop)) +
+  geom_point(color = "green") +
+  labs(y = "Longitude",  x = "Latitude", 
+       title = "Volume of Casual Departures by Station", 
+       size = "Proportion of\nCasual Riders")
 ```
   
 ### COVID-19 data
