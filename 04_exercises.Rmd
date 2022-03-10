@@ -108,8 +108,7 @@ ggmap(world) +
              alpha = .3, 
              size = .1) +
   labs(title = "Starbucks locations in the world")+
-  theme_map() +
-  theme(legend.key.size = unit(0.5, "lines"))
+  theme_map() 
 ```
 There appear to be mainly Company Owned / licensed Starbucks in North America with hardly and Joint Venture or Franchised ones. However in SouthEast Asia the Starbucks are mainly Joint Venture/Company Owned.
 
@@ -125,6 +124,7 @@ ggmap(twin_cities) +
              aes(x = Longitude, y = Latitude ),
              alpha = 1, 
              size = 1) +
+  labs(title = "Starbucks locations in the Twin Cities metro area")+
   theme_map()
 ```
 
@@ -143,6 +143,7 @@ ggmap(twin_cities) +
              aes(x = Longitude, y = Latitude ),
              alpha = 1, 
              size = 1) +
+  labs(title = "Starbucks locations in the Twin Cities metro area")+
   theme_map()
 ```
 
@@ -158,6 +159,7 @@ p <- ggmap(twin_cities) +
              aes(x = Longitude, y = Latitude ),
              alpha = 1, 
              size = 1) +
+  labs(title = "Starbucks locations in the Twin Cities metro area")+
   theme_map() 
 p + annotate("text", x =-93.17135 , y=44.93925 ,label ="Macalester College" )
 ```
@@ -258,7 +260,11 @@ top3points <- colorFactor(palette = c("orange", "purple"),
              color = ~top3points(top3)) %>% 
     addPolylines(lng = ~long, 
                lat = ~lat, 
-               color = col2hex("darkred"))
+               color = col2hex("darkred")) %>% 
+   addLegend("bottomright", pal = top3points, values = ~top3,
+    title = "Top 3 places",
+    opacity = 1
+  )
 ```
   
 ## Revisiting old datasets
@@ -449,6 +455,29 @@ mpls_all
   17. Use `leaflet` to create a map from the `mpls_all` data  that colors the neighborhoods by `prop_suspicious`. Display the neighborhood name as you scroll over it. Describe what you observe in the map.
   
 ```{r}
+sus_pal <- colorNumeric("magma",
+                        domain = mpls_all$prop_suspicious,
+                        reverse = TRUE)
+
+leaflet(data = mpls_all) %>% 
+  addProviderTiles(providers$Stamen.Toner) %>% 
+  addPolygons(stroke = FALSE, 
+             fillColor = ~sus_pal(prop_suspicious),
+             fillOpacity = 0.7,
+             smoothFactor = 0.5,
+             label = ~BDNAME) %>%  
+             addLegend(pal = sus_pal,
+                       values = ~prop_suspicious,
+                       opacity = 0.5,
+                       title = "Proportion of suspicious",
+                       position = "bottomright") 
+
+```  
+It appears that stops for suspicious activity tend to occur more towards the bottom right of the map and there are less stops in the north side of Minneapolis.  
+
+  18. Use `leaflet` to create a map of your own choosing. Come up with a question you want to try to answer and use the map to help answer that question. Describe what your map shows. 
+  
+```{r}
 all_stop <- colorNumeric("magma",
                         domain = mpls_all$total_stops,
                         reverse = TRUE)
@@ -466,28 +495,8 @@ leaflet(data = mpls_all) %>%
                        title = "Total stops per neighborhood",
                        position = "bottomright") 
 ```  
+This graph trys to solve the question of the total number of stop that occur around Minneapolis. This graph shows that the a large amount of stops generally occur in the downtown area of Minneapolis and then tends to decrease the farther out you go. 
 
-  18. Use `leaflet` to create a map of your own choosing. Come up with a question you want to try to answer and use the map to help answer that question. Describe what your map shows. 
-  
-```{r}
-sus_pal <- colorNumeric("magma",
-                        domain = mpls_all$prop_suspicious,
-                        reverse = TRUE)
-
-leaflet(data = mpls_all) %>% 
-  addProviderTiles(providers$Stamen.Toner) %>% 
-  addPolygons(stroke = FALSE, 
-             fillColor = ~sus_pal(prop_suspicious),
-             fillOpacity = 0.7,
-             smoothFactor = 0.5,
-             label = ~BDNAME) %>%  
-             addLegend(pal = sus_pal,
-                       values = ~prop_suspicious,
-                       opacity = 0.5,
-                       title = "Proportion of suspicious",
-                       position = "bottomright") 
-```  
-  
 ## GitHub link
 
   19. Below, provide a link to your GitHub page with this set of Weekly Exercises. Specifically, if the name of the file is 04_exercises.Rmd, provide a link to the 04_exercises.md file, which is the one that will be most readable on GitHub.
