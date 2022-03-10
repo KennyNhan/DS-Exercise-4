@@ -12,7 +12,7 @@ output:
 
 
 ```{r setup, include=FALSE}
-#knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r libraries}
@@ -107,7 +107,9 @@ ggmap(world) +
              aes(x = Longitude, y = Latitude, color = Ownership.Type ),
              alpha = .3, 
              size = .1) +
-  theme_map()
+  labs(title = "Starbucks locations in the world")+
+  theme_map() +
+  theme(legend.key.size = unit(0.5, "lines"))
 ```
 There appear to be mainly Company Owned / licensed Starbucks in North America with hardly and Joint Venture or Franchised ones. However in SouthEast Asia the Starbucks are mainly Joint Venture/Company Owned.
 
@@ -202,7 +204,7 @@ starbucks_with_2018_pop_est %>%
   geom_map(map = states_map,
            aes(map_id = state_name,
                fill = starbucks_per_10000), color = "white") +
-  scale_fill_viridis_c(option = "C")+
+  scale_fill_viridis_c(option = "C", direction = -1)+
   geom_point(data = us_starbucks,
              aes(x = Longitude, y = Latitude ),
              alpha = 1, 
@@ -237,7 +239,14 @@ There are more Starbucks located on the coasts of the US and not many in the mid
            -111.7915959, -111.8003867, -111.8138645, -111.9193),
   lat = c(40.685870, 40.509170, 40.765099,
           40.567210, 40.680170, 40.624229, 
-          40.6935423, 40.6809961, 40.7095681, 40.6596))
+          40.6935423, 40.6809961, 40.7095681, 40.6596),
+  top3 = c("Yes", "Yes", "No",
+           "No","No","No",
+           "No","No","No","Yes"))
+
+
+top3points <- colorFactor(palette = c("orange", "purple"), 
+                     domain = kenny_fav_places$top3)
 
   leaflet(data = kenny_fav_places) %>%
      addTiles() %>% 
@@ -246,7 +255,7 @@ There are more Starbucks located on the coasts of the US and not many in the mid
              label = ~place,
              weight = 10, 
              opacity = 1, 
-             color = col2hex("darkred")) %>% 
+             color = ~top3points(top3)) %>% 
     addPolylines(lng = ~long, 
                lat = ~lat, 
                color = col2hex("darkred"))
@@ -293,6 +302,7 @@ ggmap(dc_map) +
   geom_point(data = mergedStations_Trips2, 
             aes(x = long, y = lat, color = Departures),
             size = 2) +
+  scale_color_viridis_c(option = "I", direction = -1) +
   theme_map() +
   labs(title = "Bike Rental Depatures for Each Station in Washington DC", 
        caption = "")
@@ -314,6 +324,7 @@ mergedStations_Trips3 <- mergedStations_Trips %>%
   geom_point(data = mergedStations_Trips3,
             aes(x = long, y = lat, color = prop),
             size = 2) +
+  scale_color_viridis_c(option = "I", direction = -1) +
   theme_map() +
   labs(title = "Proportion of casual riders from each departure",
        caption = "")
@@ -370,7 +381,7 @@ covid_cum_2018_pop_est %>%
   geom_map(map = states_map,
            aes(map_id = state_name,
                fill = covid_per_10000), color = "white") +
-  scale_fill_viridis_c(option = "C")+
+  scale_fill_viridis_c(option = "C", direction = -1)+
   expand_limits(x = states_map$long, y = states_map$lat) +
   theme_map() +
   labs(title = "Proportion of cumulative cases per 10,000 people in the US by state", 
@@ -387,48 +398,100 @@ These exercises use the datasets `MplsStops` and `MplsDemo` from the `carData` l
 
   14. Use the `MplsStops` dataset to find out how many stops there were for each neighborhood and the proportion of stops that were for a suspicious vehicle or person. Sort the results from most to least number of stops. Save this as a dataset called `mpls_suspicious` and display the table.  
   
-```{r}
-MplsStops 
-``` 
+
   
 ```{r}
+
 mpls_suspicious <- MplsStops %>% 
-  group_by(neighborhood, problem, personSearch, vehicleSearch) %>% 
-  summarize(count = sum(n()), veh_count = sum()) %>% 
-  mutate(prop_veh = count / )
+  group_by(neighborhood) %>% 
+  summarize(total_stops = n(), 
+         total_sus = sum(problem == "suspicious"), 
+         prop_suspicious = total_sus/total_stops) %>% 
+  ungroup() %>%
+  select(-total_sus) %>% 
+  arrange(desc(total_stops))
+
+mpls_suspicious
 ```  
 
   15. Use a `leaflet` map and the `MplsStops` dataset to display each of the stops on a map as a small point. Color the points differently depending on whether they were for suspicious vehicle/person or a traffic stop (the `problem` variable). HINTS: use `addCircleMarkers`, set `stroke = FAlSE`, use `colorFactor()` to create a palette.  
   
 ```{r}
 
+problemCol <- colorFactor(palette = 'RdYlGn', domain = MplsStops$problem)
+
+leaflet(MplsStops) %>% 
+  addProviderTiles(providers$Stamen.Toner) %>% 
+  addCircleMarkers(data = MplsStops, lng = ~long, 
+             lat = ~lat, 
+             label = ~problem,
+             radius = .5,
+             weight = 1,
+             opacity = 1, 
+             color = ~problemCol(problem)) 
+
 ```    
 
   16. Save the folder from moodle called Minneapolis_Neighborhoods into your project/repository folder for this assignment. Make sure the folder is called Minneapolis_Neighborhoods. Use the code below to read in the data and make sure to **delete the `eval=FALSE`**. Although it looks like it only links to the .sph file, you need the entire folder of files to create the `mpls_nbhd` data set. These data contain information about the geometries of the Minneapolis neighborhoods. Using the `mpls_nbhd` dataset as the base file, join the `mpls_suspicious` and `MplsDemo` datasets to it by neighborhood (careful, they are named different things in the different files). Call this new dataset `mpls_all`.
-  
+
+
 ```{r}
-
-```  
-
-```{r, eval=FALSE}
 mpls_nbhd <- st_read("Minneapolis_Neighborhoods/Minneapolis_Neighborhoods.shp", quiet = TRUE)
+
+
+mpls_all <- mpls_nbhd %>%
+  left_join(mpls_suspicious, by = c("BDNAME" = "neighborhood")) %>%
+  left_join(MplsDemo, by = c("BDNAME" = "neighborhood"))
+
+mpls_all
 ```
 
   17. Use `leaflet` to create a map from the `mpls_all` data  that colors the neighborhoods by `prop_suspicious`. Display the neighborhood name as you scroll over it. Describe what you observe in the map.
   
 ```{r}
+all_stop <- colorNumeric("magma",
+                        domain = mpls_all$total_stops,
+                        reverse = TRUE)
 
+leaflet(data = mpls_all) %>% 
+  addProviderTiles(providers$Stamen.Toner) %>% 
+  addPolygons(stroke = FALSE, 
+             fillColor = ~all_stop(total_stops),
+             fillOpacity = 0.7,
+             smoothFactor = 0.5,
+             label = ~BDNAME) %>%  
+             addLegend(pal = all_stop,
+                       values = ~total_stops,
+                       opacity = 0.5,
+                       title = "Total stops per neighborhood",
+                       position = "bottomright") 
 ```  
 
   18. Use `leaflet` to create a map of your own choosing. Come up with a question you want to try to answer and use the map to help answer that question. Describe what your map shows. 
   
 ```{r}
+sus_pal <- colorNumeric("magma",
+                        domain = mpls_all$prop_suspicious,
+                        reverse = TRUE)
 
+leaflet(data = mpls_all) %>% 
+  addProviderTiles(providers$Stamen.Toner) %>% 
+  addPolygons(stroke = FALSE, 
+             fillColor = ~sus_pal(prop_suspicious),
+             fillOpacity = 0.7,
+             smoothFactor = 0.5,
+             label = ~BDNAME) %>%  
+             addLegend(pal = sus_pal,
+                       values = ~prop_suspicious,
+                       opacity = 0.5,
+                       title = "Proportion of suspicious",
+                       position = "bottomright") 
 ```  
   
 ## GitHub link
 
   19. Below, provide a link to your GitHub page with this set of Weekly Exercises. Specifically, if the name of the file is 04_exercises.Rmd, provide a link to the 04_exercises.md file, which is the one that will be most readable on GitHub.
 
+[link](https://github.com/KennyNhan/DS-Exercise-4/blob/master/04_exercises.Rmd)
 
 **DID YOU REMEMBER TO UNCOMMENT THE OPTIONS AT THE TOP?**
